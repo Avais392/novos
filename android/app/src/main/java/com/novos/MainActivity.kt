@@ -1,4 +1,4 @@
-package com.novos
+package com.avais.novos
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

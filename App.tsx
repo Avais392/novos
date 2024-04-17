@@ -1,118 +1,101 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React from 'react';
-import type {PropsWithChildren} from 'react';
 import {
+  ActivityIndicator,
+  Button,
+  Platform,
   SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
+  Linking,
 } from 'react-native';
+import {useGoogleFit} from './src/useGoogleFit';
+import {useAppleHealthKit} from './src/useAppleKit';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+export default function HealthKitTest() {
+  const {
+    steps: googleSteps,
+    stepsLoaded: googleStepsLoaded,
+    isPermissionGranted: isGooglePermissionsGranted,
+    requestPermission: requestGooglePermission,
+    error: googleError,
+    isLoading: isGoogleLoading,
+  } = useGoogleFit();
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+  const {
+    steps: appleSteps,
+    stepsLoaded: appleStepsLoaded,
+    isPermissionGranted: isApplePermissionsGranted,
+    requestPermission: requestApplePermission,
+    error: appleError,
+    isLoading: isAppleLoading,
+  } = useAppleHealthKit();
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const openAppSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    }
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    <SafeAreaView>
+      {isGoogleLoading || isAppleLoading ? (
+        <ActivityIndicator
+          testID="loading-indicator"
+          size="large"
+          color="#0000ff"
+        />
+      ) : (
+        <View style={styles.contianer}>
+          {googleError && <Text>Error: {googleError}</Text>}
+          {appleError && <Text>Error: {appleError}</Text>}
+          {Platform.OS === 'ios' && isApplePermissionsGranted && (
+            <Button
+              title="Enable Apple HealthKit Permissions"
+              onPress={() => {
+                requestApplePermission();
+                openAppSettings(); // Navigate to app settings
+              }}
+            />
+          )}
+          {Platform.OS === 'android' && !isGooglePermissionsGranted && (
+            <Button
+              title="Enable Google Fit Permissions"
+              onPress={requestGooglePermission}
+            />
+          )}
+          {Platform.OS === 'ios' &&
+            isApplePermissionsGranted &&
+            appleStepsLoaded && (
+              <View>
+                <Text style={styles.bold}>
+                  Apple HealthKit Steps data:{' '}
+                  {appleSteps && appleSteps[0]?.value
+                    ? appleSteps[0].value
+                    : 'No data'}
+                </Text>
+              </View>
+            )}
+          {Platform.OS === 'android' &&
+            isGooglePermissionsGranted &&
+            googleStepsLoaded && (
+              <View>
+                <Text style={styles.bold}>
+                  Google Fit Steps data: {googleSteps ? googleSteps : 'No data'}
+                </Text>
+              </View>
+            )}
         </View>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  bold: {
+    fontWeight: 'bold',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  contianer: {
+    padding: 12,
   },
 });
-
-export default App;
